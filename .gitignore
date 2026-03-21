@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+dist/
+
+# Runtime data (SQLite, IPC, agent workspace)
+store/
+ipc/
+workspace/
