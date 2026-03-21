@@ -20,6 +20,14 @@ import {
 import { startIpcWatcher } from './ipc.js';
 import { startScheduler } from './scheduler.js';
 
+// --- Process-level crash protection ---
+process.on('uncaughtException', (err) => {
+  console.error('[fatal] Uncaught exception:', err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[fatal] Unhandled rejection:', err);
+});
+
 // --- State ---
 let currentSessionId: string | undefined;
 let agentRunning = false;
@@ -47,6 +55,7 @@ async function processQueue(): Promise<void> {
     const msg = getNextPendingMessage();
     if (!msg) break;
 
+    console.log(`[queue] Processing message ${msg.id}: ${msg.content.slice(0, 60)}`);
     agentRunning = true;
     try {
       const finalSessionId = await runAgent(msg.content, {
@@ -118,8 +127,11 @@ function startRepl(): void {
 
   rl.on('close', () => {
     // User hit Ctrl+D — close the active session gracefully then exit
-    if (agentRunning) closeSession();
-    process.exit(0);
+    // Only exit if running interactively; under pm2 stdin closes immediately
+    if (process.stdin.isTTY) {
+      if (agentRunning) closeSession();
+      process.exit(0);
+    }
   });
 }
 
@@ -151,12 +163,16 @@ async function main(): Promise<void> {
   // Poll for messages added by send.ts while this process is running
   startQueuePoller();
 
-  console.log('agent-loop ready. Type a message or run: node send.ts "..."');
+  console.log('agent-loop ready.');
   if (currentSessionId) {
     console.log(`Resuming session ${currentSessionId.slice(0, 8)}…`);
   }
 
-  startRepl();
+  if (process.stdin.isTTY) {
+    startRepl();
+  } else {
+    console.log('Running in daemon mode (no REPL). Use: npm run send -- "message"');
+  }
 }
 
 main().catch((err) => {

@@ -5,7 +5,6 @@
 import { CronExpressionParser } from 'cron-parser';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 import {
   createTask,
@@ -15,7 +14,8 @@ import {
   writeTasksSnapshot,
 } from './db.js';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+import { ROOT } from './paths.js';
+
 const IPC_DIR = path.join(ROOT, 'ipc');
 const MESSAGES_DIR = path.join(IPC_DIR, 'messages');
 const TASKS_DIR = path.join(IPC_DIR, 'tasks');

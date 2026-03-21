@@ -12,11 +12,10 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { google } from 'googleapis';
 import { createServer } from 'http';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+import { ROOT } from './paths.js';
 const GMAIL_DIR = path.join(ROOT, 'workspace', 'gmail');
 const CREDENTIALS_PATH = path.join(GMAIL_DIR, 'credentials.json');
 const TOKEN_PATH = path.join(GMAIL_DIR, 'token.json');

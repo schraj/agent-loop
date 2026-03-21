@@ -7,7 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+import { ROOT } from './paths.js';
 
 export const WORKSPACE_DIR = path.join(ROOT, 'workspace');
 export const IPC_INPUT_DIR = path.join(ROOT, 'ipc', 'input');
@@ -283,6 +283,9 @@ export async function runAgent(
   };
 
   // Query loop: run query → wait for IPC follow-up → repeat
+  // Scheduled tasks and daemon-mode messages run once and return.
+  const waitForFollowUp = !opts.isScheduledTask && process.stdin.isTTY;
+
   let currentPrompt = prompt;
   while (true) {
     const result = await runQuery(currentPrompt);
@@ -291,6 +294,8 @@ export async function runAgent(
     if (result.closedDuringQuery) break;
 
     if (sessionId) opts.onSessionId(sessionId);
+
+    if (!waitForFollowUp) break;
 
     // Wait for next IPC message or _close
     const next = await new Promise<string | null>((resolve) => {

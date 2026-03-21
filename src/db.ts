@@ -1,9 +1,8 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+import { ROOT } from './paths.js';
 const STORE_DIR = path.join(ROOT, 'store');
 
 let db: Database.Database;
@@ -11,6 +10,8 @@ let db: Database.Database;
 export function initDb(): void {
   fs.mkdirSync(STORE_DIR, { recursive: true });
   db = new Database(path.join(STORE_DIR, 'agent.db'));
+  db.pragma('journal_mode = WAL');
+  db.pragma('busy_timeout = 5000');
   db.exec(`
     CREATE TABLE IF NOT EXISTS messages (
       id TEXT PRIMARY KEY,

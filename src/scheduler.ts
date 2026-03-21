@@ -21,8 +21,10 @@ export function computeNextRun(task: Task): string | null {
   if (task.schedule_type === 'interval') {
     const ms = parseInt(task.schedule_value, 10);
     if (!ms || ms <= 0) return new Date(Date.now() + 60_000).toISOString();
-    // Anchor to scheduled time to avoid drift
-    let next = new Date(task.next_run!).getTime() + ms;
+    // Anchor to scheduled time to avoid drift; fall back to now if next_run is missing
+    const anchor = task.next_run ? new Date(task.next_run).getTime() : Date.now();
+    if (isNaN(anchor)) return new Date(Date.now() + ms).toISOString();
+    let next = anchor + ms;
     while (next <= Date.now()) next += ms;
     return new Date(next).toISOString();
   }
@@ -64,29 +66,40 @@ async function runTask(task: Task, deps: SchedulerDeps): Promise<void> {
     }
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
-    console.error(`[scheduler] Task ${task.id} failed:`, error);
+    console.error(`[scheduler] Task ${task.id} agent error:`, error);
   }
 
-  const durationMs = Date.now() - startTime;
-  logTaskRun({
-    task_id: task.id,
-    run_at: new Date().toISOString(),
-    duration_ms: durationMs,
-    status: error ? 'error' : 'success',
-    result,
-    error,
-  });
+  try {
+    const durationMs = Date.now() - startTime;
+    logTaskRun({
+      task_id: task.id,
+      run_at: new Date().toISOString(),
+      duration_ms: durationMs,
+      status: error ? 'error' : 'success',
+      result,
+      error,
+    });
 
-  const nextRun = computeNextRun(task);
-  updateTaskAfterRun(
-    task.id,
-    nextRun,
-    error ? `Error: ${error}` : (result ? result.slice(0, 200) : 'Completed'),
-  );
+    const nextRun = computeNextRun(task);
+    updateTaskAfterRun(
+      task.id,
+      nextRun,
+      error ? `Error: ${error}` : (result ? result.slice(0, 200) : 'Completed'),
+    );
 
-  console.log(
-    `[scheduler] Task ${task.id} done (${durationMs}ms), next: ${nextRun ?? 'none'}`,
-  );
+    console.log(
+      `[scheduler] Task ${task.id} done (${durationMs}ms), next: ${nextRun ?? 'none'}`,
+    );
+  } catch (bookkeepingErr) {
+    console.error(`[scheduler] Task ${task.id} bookkeeping error:`, bookkeepingErr);
+    // Still try to schedule the next run so the task doesn't get stuck
+    try {
+      const nextRun = computeNextRun(task);
+      updateTaskAfterRun(task.id, nextRun, `Bookkeeping error: ${bookkeepingErr}`);
+    } catch {
+      console.error(`[scheduler] Task ${task.id} failed to update next_run — task may be stuck`);
+    }
+  }
 }
 
 let running = false;
@@ -107,7 +120,9 @@ export function startScheduler(deps: SchedulerDeps): void {
 
         activeTasks.add(task.id);
         // Run concurrently — each task is independent
-        runTask(current, deps).finally(() => activeTasks.delete(task.id));
+        runTask(current, deps)
+          .catch((err) => console.error(`[scheduler] Unhandled error in task ${task.id}:`, err))
+          .finally(() => activeTasks.delete(task.id));
       }
     } catch (err) {
       console.error('[scheduler] Loop error:', err);

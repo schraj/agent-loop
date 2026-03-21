@@ -8,10 +8,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CronExpressionParser } from 'cron-parser';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { z } from 'zod';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+import { ROOT } from './paths.js';
 const IPC_MESSAGES_DIR = path.join(ROOT, 'ipc', 'messages');
 const IPC_TASKS_DIR = path.join(ROOT, 'ipc', 'tasks');
 const TASKS_SNAPSHOT = path.join(ROOT, 'ipc', 'current_tasks.json');
