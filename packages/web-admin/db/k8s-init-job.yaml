@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init
+  namespace: todo-app
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: sqlcmd
+          image: mcr.microsoft.com/mssql-tools:latest
+          command:
+            - /opt/mssql-tools/bin/sqlcmd
+            - -S
+            - $(DB_SERVER)
+            - -d
+            - $(DB_DATABASE)
+            - -U
+            - $(DB_USER)
+            - -P
+            - $(DB_PASSWORD)
+            - -i
+            - /scripts/init.sql
+          env:
+            - name: DB_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: db-init-config
+                  key: DB_SERVER
+            - name: DB_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: db-init-config
+                  key: DB_DATABASE
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: db-init-config
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-init-secret
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: sql-scripts
+              mountPath: /scripts
+      volumes:
+        - name: sql-scripts
+          configMap:
+            name: db-init-sql

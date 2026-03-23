@@ -3,6 +3,9 @@ node_modules/
 dist/
 
 # Runtime data (SQLite, IPC, agent workspace)
-store/
-ipc/
-workspace/
+packages/*/store/
+packages/*/ipc/
+packages/*/workspace/
+
+# Web-admin API runtime data
+packages/web-admin/api/data/

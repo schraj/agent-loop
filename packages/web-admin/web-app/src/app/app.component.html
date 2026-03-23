@@ -1,0 +1,21 @@
+@if (auth.isAuthenticated()) {
+  <nav class="navbar">
+    <a routerLink="/dashboard" class="navbar__brand">{{ title }}</a>
+    <div class="navbar__links">
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+      @if (auth.isAdmin()) {
+        <a routerLink="/admin/status" routerLinkActive="active">Status</a>
+        <a routerLink="/admin/roles" routerLinkActive="active">Roles</a>
+        <a routerLink="/admin/users" routerLinkActive="active">Users</a>
+      }
+    </div>
+    <div class="navbar__user">
+      <span class="navbar__username">{{ auth.currentUser()?.displayName }}</span>
+      <button class="navbar__logout" (click)="auth.logout()">Sign Out</button>
+    </div>
+  </nav>
+}
+
+<main class="main">
+  <router-outlet />
+</main>

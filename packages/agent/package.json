@@ -1,0 +1,26 @@
+{
+  "name": "@agent-loop/agent",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "send": "tsx send.ts",
+    "deploy": "npm run build && pm2 restart ecosystem.config.cjs --update-env",
+    "start": "npm run build && pm2 start ecosystem.config.cjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.76",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "better-sqlite3": "^11.8.1",
+    "cron-parser": "^5.0.0",
+    "googleapis": "^171.4.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.7",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.3"
+  }
+}
